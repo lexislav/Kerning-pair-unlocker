@@ -9,7 +9,7 @@ import GlyphsApp
 import vanilla
 
 #globals definitions
-VERSION = "1.1"
+VERSION = "1.2"
 SCRIPT_NAME = "Kering pairs Unlocker"
 run = True
 
@@ -80,10 +80,15 @@ class AppController:
         return pairs
 
     
-    def getSettings(self):
+    def getSettings(self):      
+        try:
+            c=int(self.w.specifyCorrection.get())
+        except ValueError:
+            c=0
         out = {
                 "lockSide": "left" if self.w.side.get() == 0 else "right",
                 "pairs": self.pairsCleanup(self.w.pairsDefinition.get().split("\n")),
+                "correction": c,
                 "allMasters": self.w.allMasters.get()
         }
         return out
@@ -104,7 +109,10 @@ class AppController:
         w.text0 = vanilla.TextBox( (self.spaceX, height, 120, self.textY), "Lock position:", sizeStyle='regular' )
         w.side = vanilla.RadioGroup( (self.spaceX+130, height, 120, self.textY), ["Left", "Right"], isVertical = False, sizeStyle='regular' )
         w.side.set(0)
-        height += self.textY*3
+        height += self.textY*2
+        w.text2 = vanilla.TextBox( (self.spaceX, height, 120, self.textY), "Specify correction:", sizeStyle='regular' )
+        w.specifyCorrection = vanilla.EditText( (self.spaceX + 130, height, -15, 20), "0", sizeStyle = 'regular' )
+        height += self.spaceY*2
         #editbox
         w.text1 = vanilla.TextBox( (self.spaceX, height, -self.spaceX, self.textY*2), "Define pairs to unlock\n(use glyph names)", sizeStyle='regular' )
         height += self.spaceY*2
@@ -131,10 +139,10 @@ class AppWorker:
         if len(pairs) == 0:
             print "Ups, no pairs to work with."
             return
-        self.getToThePoint(pairs,settings['lockSide'],settings['allMasters'])
+        self.getToThePoint(pairs,settings['lockSide'],settings['correction'],settings['allMasters'])
         return
         
-    def getToThePoint(self,pairs,lockSide,allMasters):
+    def getToThePoint(self,pairs,lockSide,correction,allMasters):
         if allMasters:
             proceedMasters = thisFont.masters
         else:
@@ -145,38 +153,40 @@ class AppWorker:
                 leftGlyphName = pair[0]
                 rightGlyphName = pair[1]
                 if self.checkPairExistence(leftGlyphName,rightGlyphName,id):
-                    self.unlockKerning(lockSide,leftGlyphName,rightGlyphName,id)
+                    self.unlockKerning(lockSide,leftGlyphName,rightGlyphName,correction,id)
         return
                 
-    def checkPairExistence(self,leftGlyphName,rightGlyphName,master):
+    def checkPairExistence(self,leftGlyphName,rightGlyphName,mid):
         if thisFont.glyphs[leftGlyphName] and thisFont.glyphs[rightGlyphName]:
             return True
         else:
             return False
             
-    def unlockKerning(self,lockSide,leftGlyphName,rightGlyphName,masterID):
-        currentKerningForPair = thisFont.kerningForPair(masterID, '@MMK_L_'+leftGlyphName, "@MMK_R_"+rightGlyphName)
+    def unlockKerning(self,lockSide,leftGlyphName,rightGlyphName,correction,id):
+        currentKerningForPair = 0
+        currentKerningForPair = thisFont.kerningForPair(id, '@MMK_L_'+leftGlyphName, "@MMK_R_"+rightGlyphName)
         leftName = "@MMK_L_" + leftGlyphName
         rightName = "@MMK_R_" + rightGlyphName
         #has leftGlyph exception?
-        if leftGlyphName in kernDic[masterID]:
-            if rightGlyphName in kernDic[masterID][leftGlyphName]:
-                currentKerningForPair = kernDic[masterID][leftGlyphName][rightGlyphName]
+        if leftGlyphName in kernDic[id]:
+            if rightGlyphName in kernDic[id][leftGlyphName]:
+                currentKerningForPair = kernDic[id][leftGlyphName][rightGlyphName]
                 rightName = rightGlyphName
-            elif "@MMK_R_" + rightGlyphName in kernDic[masterID][leftGlyphName]:
-                currentKerningForPair = kernDic[masterID][leftGlyphName]["@MMK_R_" + rightGlyphName]
+            elif "@MMK_R_" + rightGlyphName in kernDic[id][leftGlyphName]:
+                currentKerningForPair = kernDic[id][leftGlyphName]["@MMK_R_" + rightGlyphName]
             leftName = leftGlyphName
-        elif "@MMK_L_"+leftGlyphName in kernDic[masterID]:
-            if rightGlyphName in kernDic[masterID][leftName]:
-                currentKerningForPair = kernDic[masterID][leftName][rightGlyphName]
+        elif "@MMK_L_"+leftGlyphName in kernDic[id]:
+            if rightGlyphName in kernDic[id][leftName]:
+                currentKerningForPair = kernDic[id][leftName][rightGlyphName]
                 rightName = rightGlyphName
         #if currentKerning is not set, set it for -1
-        if currentKerningForPair is not set:
+        if currentKerningForPair is None:
             currentKerningForPair = -1
+        else: currentKerningForPair += correction
         if lockSide == "left":
-            thisFont.setKerningForPair(masterID, leftName, rightGlyphName, currentKerningForPair)
+            thisFont.setKerningForPair(id, leftName, rightGlyphName, currentKerningForPair)
         else:
-            thisFont.setKerningForPair(masterID, leftGlyphName, rightName, currentKerningForPair)
+            thisFont.setKerningForPair(id, leftGlyphName, rightName, currentKerningForPair)
         return
         
     

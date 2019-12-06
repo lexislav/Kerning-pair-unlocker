@@ -180,7 +180,7 @@ class AppWorker:
                 currentKerningForPair = kernDic[id][leftName][rightGlyphName]
                 rightName = rightGlyphName
         #if currentKerning is not set, set it for -1
-        if currentKerningForPair is None:
+        if currentKerningForPair > 900000000000000:
             currentKerningForPair = -1
         else: currentKerningForPair += correction
         if lockSide == "left":

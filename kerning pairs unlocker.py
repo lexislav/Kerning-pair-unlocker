@@ -9,16 +9,15 @@ import GlyphsApp
 import vanilla
 
 #globals definitions
-VERSION = "1.0beta"
+VERSION = "1.1"
 SCRIPT_NAME = "Kering pairs Unlocker"
 run = True
 
 kernDic = None
+allMasters =  True
 
 def refreshGlobals():
     #reset values
-    global groupsL
-    global groupsR
     global kernDic
     kernDic = thisFont.kerningDict()
     return True
@@ -84,7 +83,8 @@ class AppController:
     def getSettings(self):
         out = {
                 "lockSide": "left" if self.w.side.get() == 0 else "right",
-                "pairs": self.pairsCleanup(self.w.pairsDefinition.get().split("\n"))
+                "pairs": self.pairsCleanup(self.w.pairsDefinition.get().split("\n")),
+                "allMasters": self.w.allMasters.get()
         }
         return out
     
@@ -109,9 +109,12 @@ class AppController:
         w.text1 = vanilla.TextBox( (self.spaceX, height, -self.spaceX, self.textY*2), "Define pairs to unlock\n(use glyph names)", sizeStyle='regular' )
         height += self.spaceY*2
         w.pairsDefinition = vanilla.EditText( (self.spaceX, height, -self.spaceX, -self.spaceY-35), "", continuous=False, placeholder = "Paste pairs here\nOne pair per line", sizeStyle = 'regular' )
-        height += self.spaceY*4
+        height += self.spaceY*8
+        #unheck to process only current master
+        w.allMasters = vanilla.CheckBox((self.spaceX, -self.spaceY-20, -self.spaceX - 80, -self.spaceY), "Process all masters", value=True, sizeStyle = 'regular')
+        height += self.spaceY*2
         #process button
-        w.buttonProcess = vanilla.Button((-15 - 80, -15 - 20, -15, -15), "Go", sizeStyle = 'regular', callback=self.process)
+        w.buttonProcess = vanilla.Button((-15 - 40, -15 - 20, -15, -15), "Go", sizeStyle = 'regular', callback=self.process)
         w.setDefaultButton(w.buttonProcess)
         #spinner
         w.spinner = vanilla.ProgressSpinner((15, -15 - 16, 16, 16), sizeStyle = 'regular')
@@ -128,11 +131,15 @@ class AppWorker:
         if len(pairs) == 0:
             print "Ups, no pairs to work with."
             return
-        self.getToThePoint(pairs,settings['lockSide'])
+        self.getToThePoint(pairs,settings['lockSide'],settings['allMasters'])
         return
         
-    def getToThePoint(self,pairs,lockSide):
-        for master in thisFont.masters:
+    def getToThePoint(self,pairs,lockSide,allMasters):
+        if allMasters:
+            proceedMasters = thisFont.masters
+        else:
+            proceedMasters = [selectedMaster]
+        for master in proceedMasters:
             id = master.id
             for pair in pairs:
                 leftGlyphName = pair[0]

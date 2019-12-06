@@ -180,15 +180,9 @@ class AppWorker:
                 currentKerningForPair = kernDic[id][leftName][rightGlyphName]
                 rightName = rightGlyphName
         #if currentKerning is not set, set it for -1
-<<<<<<< HEAD
         if currentKerningForPair is None:
             currentKerningForPair = -1
         else: currentKerningForPair += correction
-=======
-        if currentKerningForPair is not set:
-            print "shit"
-        currentKerningForPair += correction
->>>>>>> 1fd15e9a5fbecf121b9b444672f773bebd3ff8d5
         if lockSide == "left":
             thisFont.setKerningForPair(id, leftName, rightGlyphName, currentKerningForPair)
         else:
